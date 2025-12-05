@@ -130,7 +130,7 @@ class ControlledTask
      * @param string $message The message to log
      * @return void
      */
-    private function log(string $message): void
+    protected function log(string $message): void
     {
         $timestamp = date('[Y-m-d H:i:s]');
         $logEntry = "{$timestamp} {$message}" . PHP_EOL;
@@ -200,6 +200,51 @@ class ControlledTask
     }
     
     /**
+     * Safely execute an external PHP script
+     * 
+     * Uses escapeshellcmd() and escapeshellarg() to prevent command injection.
+     * This is a safer alternative to shell_exec() for executing external scripts.
+     * 
+     * @param string $phpBinary Path to PHP binary (e.g., '/usr/bin/php')
+     * @param string $scriptPath Path to the script to execute
+     * @param array $args Optional arguments to pass to the script
+     * @return string|null Output from the script or null on failure
+     */
+    protected function executeScript(string $phpBinary, string $scriptPath, array $args = []): ?string
+    {
+        // Validate that the PHP binary exists and is executable
+        if (!is_executable($phpBinary)) {
+            $this->log("ERROR: PHP binary not found or not executable: {$phpBinary}");
+            return null;
+        }
+        
+        // Validate that the script exists and is readable
+        if (!file_exists($scriptPath) || !is_readable($scriptPath)) {
+            $this->log("ERROR: Script not found or not readable: {$scriptPath}");
+            return null;
+        }
+        
+        // Build the command with proper escaping
+        $command = escapeshellcmd($phpBinary) . ' ' . escapeshellarg($scriptPath);
+        
+        // Add escaped arguments if provided
+        foreach ($args as $arg) {
+            $command .= ' ' . escapeshellarg($arg);
+        }
+        
+        // Execute the command and capture output
+        $output = [];
+        $returnCode = 0;
+        exec($command, $output, $returnCode);
+        
+        if ($returnCode !== 0) {
+            $this->log("WARNING: Script exited with code {$returnCode}");
+        }
+        
+        return implode(PHP_EOL, $output);
+    }
+    
+    /**
      * Execute the main task if all conditions are met
      * 
      * @return void
@@ -221,8 +266,8 @@ class ControlledTask
             // $response = file_get_contents('https://example.com/api/task');
             // $this->log("API Response: " . $response);
             
-            // Example 2: Execute another PHP script
-            // $output = shell_exec('/usr/bin/php /path/to/another_script.php');
+            // Example 2: Execute another PHP script (safe method)
+            // $output = $this->executeScript('/usr/bin/php', '/path/to/another_script.php');
             // $this->log("Script output: " . $output);
             
             // Example 3: Database operations

@@ -219,7 +219,7 @@ public function run(): void
     
     // Your task code here:
     // file_get_contents('https://api.example.com/endpoint');
-    // shell_exec('/usr/bin/php /path/to/script.php');
+    // $this->executeScript('/usr/bin/php', '/path/to/script.php');
     // Database operations, file processing, etc.
     
     $this->log("Task completed successfully");
